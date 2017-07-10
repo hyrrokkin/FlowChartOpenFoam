@@ -1,4 +1,5 @@
 import os
+import sys
 from Graph import *
 
 
@@ -20,6 +21,9 @@ class Project:
             check_path(path + name)
         except ValueError:
             os.mkdir(path + name)
+        if "WM_PROJECT_VERSION" not in os.environ:
+            print ('$WM_PROJECT_VERSION unset. FlowCart doesn not work that way') 
+            sys.exit('Forcing quit.')
 
         self.__name = name
         self.__path = path
