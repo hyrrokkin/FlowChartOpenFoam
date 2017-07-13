@@ -43,7 +43,7 @@ class FlowChartView(QGraphicsView):
                 if isinstance(item, VertexGui):
                     selected_item = item
 
-        if event.modifiers() == Qt.AltModifier:
+        if True:
             if self.__selected_vertex:
                 self.__graph.connect(library[self.__selected_vertex.text()], library[selected_item.text()], Weight(1))
                 print str(library[self.__selected_vertex.text()]) + ' and ' + str(library[selected_item.text()]) +\

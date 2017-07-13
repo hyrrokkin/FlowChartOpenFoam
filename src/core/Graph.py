@@ -114,7 +114,7 @@ class Vertex:
 
     @property
     def name(self):
-        return self.__name
+        return self.__name    
 
     @id.setter
     def id(self, identify):
@@ -182,6 +182,10 @@ class Vertex:
     @abstractmethod
     def action(self, **kwargs):
         pass
+    
+    @abstractmethod
+    def initialize(self, **kwargs):
+        pass
 
 
 class Graph:
@@ -194,6 +198,8 @@ class Graph:
 
     def run(self, path):
         if len(self.__vertices) > 0:
+            for v in self.__vertices:
+                v.initialize(path=path)
             self.__vertices[0].action(path=path)
 
     def get_vertex(self, identify):
