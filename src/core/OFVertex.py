@@ -16,6 +16,7 @@ def check_file(item):
     if not os.path.isfile(item):
         raise ValueError('Can not find file %s' %item) 
 
+
 class BlockMesh(Vertex):
     def __init__(self, ofDictPath =''):
         super(BlockMesh, self).__init__(name='BlockMesh')

@@ -11,9 +11,10 @@ library = {
 }"""
 
 
-def library(name):
+def library(name, project):
+    print project
     if name == 'blockMesh':
-        return BlockMesh()
+        return BlockMesh(ofDictPath=project.path + '/case/system/blockMeshDict')
 
     if name == 'icoFoam':
         return Solver()
@@ -46,7 +47,7 @@ class FlowChartView(QGraphicsView):
                 index = self.parent().library_tree().selectedIndexes()[0]
                 text = index.model().itemFromIndex(index).text()
                 self.add_vertex(text, event.x(), event.y(), 110, 65)
-                self.graph().add_vertex(library(str(text)))
+                self.graph().add_vertex(library(str(text), self.parent().main_pane.project))
                 self.parent().library_tree().clearSelection()
                 return
 
@@ -60,8 +61,8 @@ class FlowChartView(QGraphicsView):
 
         if True:
             if self.__selected_vertex:
-                self.graph().connect(library(self.__selected_vertex.text()), library(selected_item.text()), Weight(1))
-                print str(library(self.__selected_vertex.text())) + ' and ' + str(library(selected_item.text())) +\
+                self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project), library(selected_item.text(), self.parent().main_pane.project), Weight(1))
+                print str(library(self.__selected_vertex.text(), self.parent().main_pane.project)) + ' and ' + str(library(selected_item.text(), self.parent().main_pane.project)) +\
                       ' connect'
 
                 print self.__selected_vertex.scenePos()

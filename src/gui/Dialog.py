@@ -126,7 +126,9 @@ class NewProjectDialog(QDialog):
                    selected_item.parent().text() + '/' + \
                    selected_item.text() + '/'
 
-            os.system('cp -R ' + str(path) + ' ' + str(self.path_line_edit.text()))
+            os.mkdir(self.path_line_edit.text())
+            os.mkdir(self.path_line_edit.text() + '/case')
+            os.system('cp -R ' + str(path) + '* ' + str(self.path_line_edit.text() + '/case'))
 
             print path
 

@@ -44,6 +44,10 @@ class Project:
     def clean(self):
         os.system('rm -rf ' + self.__path + self.__name)
 
+    @property
+    def path(self):
+        return self.__path
+
 
 def new_project(name='Untitled', path=os.path.expanduser('~/OFProject/')):
     return Project(name, path, Graph())
