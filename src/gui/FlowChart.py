@@ -2,19 +2,34 @@ from MainWindow import *
 from Vertex import *
 from src.core.Graph import *
 
+
+"""
 library = {
     'blockMesh': BlockMesh(),
     'icoFoam': Solver(),
     'paraFoam': ParaFoam()
-}
+}"""
+
+
+def library(name):
+    if name == 'blockMesh':
+        return BlockMesh()
+
+    if name == 'icoFoam':
+        return Solver()
+
+    if name == 'paraFoam':
+        return ParaFoam()
 
 
 class FlowChartView(QGraphicsView):
     def __init__(self, scene, parent=None):
         QGraphicsView.__init__(self, scene, parent)
 
-        self.__graph = Graph()
         self.__selected_vertex = None
+
+    def graph(self):
+        return self.parent().main_pane().graph()
 
     def run(self):
         self.__graph.run('/home/user/OpenFOAM/user-4.1/run/pitzDaily/')
@@ -31,7 +46,7 @@ class FlowChartView(QGraphicsView):
                 index = self.parent().library_tree().selectedIndexes()[0]
                 text = index.model().itemFromIndex(index).text()
                 self.add_vertex(text, event.x(), event.y(), 110, 65)
-                self.__graph.add_vertex(library[str(text)])
+                self.graph().add_vertex(library(str(text)))
                 self.parent().library_tree().clearSelection()
                 return
 
@@ -45,8 +60,8 @@ class FlowChartView(QGraphicsView):
 
         if True:
             if self.__selected_vertex:
-                self.__graph.connect(library[self.__selected_vertex.text()], library[selected_item.text()], Weight(1))
-                print str(library[self.__selected_vertex.text()]) + ' and ' + str(library[selected_item.text()]) +\
+                self.graph().connect(library(self.__selected_vertex.text()), library(selected_item.text()), Weight(1))
+                print str(library(self.__selected_vertex.text())) + ' and ' + str(library(selected_item.text())) +\
                       ' connect'
 
                 print self.__selected_vertex.scenePos()
@@ -63,7 +78,7 @@ class FlowChartView(QGraphicsView):
                 self.__selected_vertex = selected_item
                 return
 
-        #print self.__graph
+        #print self.graph
 
     def mouseMoveEvent(self, event):
         pass
@@ -75,8 +90,10 @@ class FlowChartScene(QGraphicsScene):
 
 
 class FlowChart(QWidget):
-    def __init__(self):
+    def __init__(self, main_pane=None):
         QWidget.__init__(self)
+
+        self.__main_pane = main_pane
 
         self.__layout = QHBoxLayout(self)
 
@@ -90,6 +107,10 @@ class FlowChart(QWidget):
                self.height() - (self.__layout.contentsMargins().top() + self.__layout.contentsMargins().bottom())
 
     @property
+    def main_pane(self):
+        return self.__main_pane
+
+    @property
     def library_tree(self):
         return self.parent().library_tree()
 
@@ -99,3 +120,7 @@ class FlowChart(QWidget):
 
     def run(self):
         self.__view.run()
+
+    def clear(self):
+        self.__scene.clear()
+

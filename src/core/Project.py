@@ -8,7 +8,8 @@ def check_path(item):
 
     if not os.path.isdir(item):
         raise ValueError('item is not path')
-        
+
+
 class Project:
     def __init__(self, name='Untitled', path=os.path.expanduser('~/OFProject/'), graph=None):
         if "WM_PROJECT_VERSION" not in os.environ:
@@ -39,6 +40,11 @@ class Project:
 
     def run(self):
         self.__graph.run(self.__path + self.__name)
+
     def clean(self):
-        os.system('rm -rf ' + self.__path + self.__name) 
-        
+        os.system('rm -rf ' + self.__path + self.__name)
+
+
+def new_project(name='Untitled', path=os.path.expanduser('~/OFProject/')):
+    return Project(name, path, Graph())
+

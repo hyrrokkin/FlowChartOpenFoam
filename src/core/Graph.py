@@ -140,6 +140,9 @@ class Vertex:
         check_vertex(other)
         return not self == other
 
+    def __call__(self, *args, **kwargs):
+        return self
+
     def is_connected(self, vertex):
         check_vertex(vertex)
         return vertex in self.__adjacency_list
@@ -195,6 +198,9 @@ class Graph:
     def __contains__(self, item):
         check_vertex(item)
         return item in self.__vertices
+
+    def __call__(self, *args, **kwargs):
+        return self
 
     def run(self, path):
         if len(self.__vertices) > 0:

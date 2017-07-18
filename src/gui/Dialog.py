@@ -1,6 +1,8 @@
 from MainWindow import *
 import os
 
+from src.core.Project import new_project
+
 dir_path = '/opt/OpenFOAM/OpenFOAM-4.1/tutorials/'
 
 
@@ -127,6 +129,10 @@ class NewProjectDialog(QDialog):
             os.system('cp -R ' + str(path) + ' ' + str(self.path_line_edit.text()))
 
             print path
+
+        tmp = str(self.path_line_edit.text()).split('/')
+        project = new_project(name=tmp[len(tmp) - 1], path=str(self.path_line_edit.text()))
+        self.parent().new_project(project)
 
         self.close()
 
