@@ -33,7 +33,7 @@ class FlowChartView(QGraphicsView):
         return self.parent().main_pane().graph()
 
     def run(self):
-        self.__graph.run('/home/user/OpenFOAM/user-4.1/run/pitzDaily/')
+        self.graph().run('/home/user/OpenFOAM/user-4.1/run/pitzDaily/')
 
     def add_vertex(self, text, x, y, width, height):
         vertex = VertexGui(width, height, text)
@@ -59,7 +59,29 @@ class FlowChartView(QGraphicsView):
                 if isinstance(item, VertexGui):
                     selected_item = item
 
-        if True:
+        if event.modifiers() == Qt.AltModifier:
+            if self.__selected_vertex:
+                self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project),
+                                     library(selected_item.text(), self.parent().main_pane.project), Weight(1))
+                print str(library(self.__selected_vertex.text(), self.parent().main_pane.project)) + ' and ' + str(
+                    library(selected_item.text(), self.parent().main_pane.project)) + \
+                      ' connect'
+
+                print self.__selected_vertex.scenePos()
+                print selected_item.scenePos()
+
+                if self.__selected_vertex.pos().x() + self.__selected_vertex.rect().width() < selected_item.pos().x():
+                    self.connect_line(self.__selected_vertex, selected_item)
+                elif self.__selected_vertex.pos().x() + self.__selected_vertex.rect().width() > selected_item.pos().x():
+                    self.connect_line(selected_item, self.__selected_vertex)
+
+                self.__selected_vertex = None
+                return
+            else:
+                self.__selected_vertex = selected_item
+                return
+
+        """if True:
             if self.__selected_vertex:
                 self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project), library(selected_item.text(), self.parent().main_pane.project), Weight(1))
                 print str(library(self.__selected_vertex.text(), self.parent().main_pane.project)) + ' and ' + str(library(selected_item.text(), self.parent().main_pane.project)) +\
@@ -77,12 +99,36 @@ class FlowChartView(QGraphicsView):
                 return
             else:
                 self.__selected_vertex = selected_item
-                return
+                return"""
 
         #print self.graph
 
     def mouseMoveEvent(self, event):
         pass
+
+    def connect_line(self, from_item, to_item):
+        if from_item.pos().y() + from_item.rect().height() < to_item.pos().y():
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x() + to_item.rect().width() / 2,
+                to_item.scenePos().y())
+        elif from_item.pos().y() > to_item.pos().y() + to_item.rect().height():
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x() + to_item.rect().width() / 2,
+                to_item.scenePos().y() + to_item.rect().height())
+        else:
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x(),
+                to_item.scenePos().y() + to_item.rect().height() / 2)
+
+        line.setPen(QtGui.QPen(Qt.black, 5))
+
+        self.scene().addItem(line)
 
 
 class FlowChartScene(QGraphicsScene):
