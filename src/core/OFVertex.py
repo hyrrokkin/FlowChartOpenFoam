@@ -19,7 +19,7 @@ def check_file(item):
 
 class BlockMesh(Vertex):
     def __init__(self, ofDictPath =''):
-        super(BlockMesh, self).__init__(name='BlockMesh')
+        super(BlockMesh, self).__init__(name='blockMesh')
         try:
             check_file(ofDictPath)
         except ValueError:
@@ -56,7 +56,7 @@ class Solver(Vertex):
         #parsedControlDict["endTime"] = 1
         #parsedControlDict.writeFile()
         
-        super(Solver, self).__init__( name=solverNameFromTutorial )
+        super(Solver, self).__init__(name=solverNameFromTutorial)
 
     @property
     def setupCase(self):
