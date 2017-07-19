@@ -101,7 +101,8 @@ class FlowChartView(QGraphicsView):
             else:
                 self.__selected_vertex = selected_item
                 return
-
+        else:
+            self.__selected_vertex = None
         """if True:
             if self.__selected_vertex:
                 self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project), library(selected_item.text(), self.parent().main_pane.project), Weight(1))
