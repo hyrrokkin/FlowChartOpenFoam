@@ -90,7 +90,7 @@ class Solver(Vertex):
 
 class ParaFoam(Vertex):
     def __init__(self):
-        super(ParaFoam, self).__init__(name='ParaFoam')
+        super(ParaFoam, self).__init__(name='paraFoam')
 
     def initialize(self, **kwargs):
         print self
