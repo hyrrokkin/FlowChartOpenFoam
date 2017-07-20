@@ -48,6 +48,10 @@ class Project:
     def path(self):
         return self.__path
 
+    @property
+    def case(self):
+        return self.__path + '/case/'
+
 
 def new_project(name='Untitled', path=os.path.expanduser('~/OFProject/')):
     return Project(name, path, Graph())

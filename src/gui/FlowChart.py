@@ -49,8 +49,12 @@ class FlowChartView(QGraphicsView):
     def graph(self):
         return self.parent().main_pane().graph()
 
+    @property
+    def project(self):
+        return self.parent().main_pane().project
+
     def run(self):
-        self.graph().run('/home/user/OpenFOAM/user-4.1/run/pitzDaily/')
+        self.graph().run(self.project.case)
 
     def add_vertex(self, text, x, y, width, height):
         vertex = VertexGui(width, height, text)

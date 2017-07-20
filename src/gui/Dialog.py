@@ -128,6 +128,7 @@ class NewProjectDialog(QDialog):
 
             os.mkdir(self.path_line_edit.text())
             os.mkdir(self.path_line_edit.text() + '/case')
+            os.mkdir(self.path_line_edit.text() + '/template')
             os.system('cp -R ' + str(path) + '* ' + str(self.path_line_edit.text() + '/case'))
 
             print path
