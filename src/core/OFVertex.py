@@ -30,6 +30,7 @@ class BlockMesh(Vertex):
              
     def action(self, **kwargs):
         print self
+        print 'run blockMesh'
         try:
             check_dir(kwargs['path'])
         except:
@@ -50,13 +51,13 @@ class Solver(Vertex):
             raise ValueError('Path to tutorial template case for Solver should be provided by user')
         self.__setupCase = tutorialPath
         parsedControlDict=ParsedParameterFile(tutorialPath+'/system/controlDict')    
-        solverNameFromTutorial = parsedControlDict["application"]
+        self.__solverNameFromTutorial = parsedControlDict["application"]
         
         #Very good way to control previously parsed OpenFOAM file
         #parsedControlDict["endTime"] = 1
         #parsedControlDict.writeFile()
         
-        super(Solver, self).__init__(name=solverNameFromTutorial)
+        super(Solver, self).__init__(name='solver')
 
     @property
     def setupCase(self):
@@ -82,7 +83,8 @@ class Solver(Vertex):
          
     def action(self, **kwargs):
         print self
-        os.system(self.name + ' -case ' + kwargs['path'])
+        print 'run ' + self.__solverNameFromTutorial
+        os.system(self.__solverNameFromTutorial + ' -case ' + kwargs['path'])
 
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
@@ -98,6 +100,7 @@ class ParaFoam(Vertex):
     def action(self, **kwargs):
         os.system('paraFoam -case ' + kwargs['path'])
         print self
+        print 'run paraFoam'
 
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(kwargs)
