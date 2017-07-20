@@ -262,6 +262,8 @@ class Graph:
 
         self.__vertices[from_vertex.id].connect(to_vertex, weight)
 
+        return True
+
     def disconnect(self, from_vertex, to_vertex):
         check_vertex(from_vertex)
         check_vertex(to_vertex)

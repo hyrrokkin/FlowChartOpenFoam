@@ -11,13 +11,30 @@ library = {
 }"""
 
 
+def show_dialog(text, parent=None):
+    msg = QMessageBox(parent)
+    msg.setIcon(QMessageBox.Critical)
+
+    msg.setText("Error")
+    msg.setInformativeText(text)
+    msg.setWindowTitle("Error!")
+    msg.setStandardButtons(QMessageBox.Ok)
+    msg.buttonClicked.connect(msgbtn)
+
+    retval = msg.exec_()
+    print "value of pressed message box button:", retval
+
+
+def msgbtn(i):
+    print "Button pressed is:", i.text()
+
+
 def library(name, project):
-    print project
     if name == 'blockMesh':
         return BlockMesh(ofDictPath=project.path + '/case/system/blockMeshDict')
 
-    if name == 'icoFoam':
-        return Solver()
+    if name == 'simpleFoam':
+        return Solver(tutorialPath=project.path + '/case')
 
     if name == 'paraFoam':
         return ParaFoam()
@@ -32,8 +49,12 @@ class FlowChartView(QGraphicsView):
     def graph(self):
         return self.parent().main_pane().graph()
 
+    @property
+    def project(self):
+        return self.parent().main_pane().project
+
     def run(self):
-        self.__graph.run('/home/user/OpenFOAM/user-4.1/run/pitzDaily/')
+        self.graph().run(self.project.case)
 
     def add_vertex(self, text, x, y, width, height):
         vertex = VertexGui(width, height, text)
@@ -59,7 +80,34 @@ class FlowChartView(QGraphicsView):
                 if isinstance(item, VertexGui):
                     selected_item = item
 
-        if True:
+        if event.modifiers() == Qt.AltModifier:
+            print self.graph()
+            if self.__selected_vertex:
+                """if not self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project),
+                                     library(selected_item.text(), self.parent().main_pane.project), Weight(1)):"""
+                if not self.graph().connect(self.graph().find_vertex(self.__selected_vertex.text()),
+                                            self.graph().find_vertex(selected_item.text()), Weight(1)):
+                    show_dialog('Connect error!', self)
+                    print 'connect error!'
+                else:
+                    if self.__selected_vertex.pos().x() + self.__selected_vertex.rect().width() < selected_item.pos().x():
+                        self.connect_line(self.__selected_vertex, selected_item)
+                    elif self.__selected_vertex.pos().x() + self.__selected_vertex.rect().width() > selected_item.pos().x():
+                        self.connect_line(selected_item, self.__selected_vertex)
+
+                    print str(self.graph().find_vertex(self.__selected_vertex.text())) + ' and ' + str(
+                        self.graph().find_vertex(selected_item.text())) + \
+                          ' connect'
+
+                    self.__selected_vertex = None
+
+                    return
+            else:
+                self.__selected_vertex = selected_item
+                return
+        else:
+            self.__selected_vertex = None
+        """if True:
             if self.__selected_vertex:
                 self.graph().connect(library(self.__selected_vertex.text(), self.parent().main_pane.project), library(selected_item.text(), self.parent().main_pane.project), Weight(1))
                 print str(library(self.__selected_vertex.text(), self.parent().main_pane.project)) + ' and ' + str(library(selected_item.text(), self.parent().main_pane.project)) +\
@@ -77,12 +125,36 @@ class FlowChartView(QGraphicsView):
                 return
             else:
                 self.__selected_vertex = selected_item
-                return
+                return"""
 
         #print self.graph
 
     def mouseMoveEvent(self, event):
         pass
+
+    def connect_line(self, from_item, to_item):
+        if from_item.pos().y() + from_item.rect().height() < to_item.pos().y():
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x() + to_item.rect().width() / 2,
+                to_item.scenePos().y())
+        elif from_item.pos().y() > to_item.pos().y() + to_item.rect().height():
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x() + to_item.rect().width() / 2,
+                to_item.scenePos().y() + to_item.rect().height())
+        else:
+            line = QGraphicsLineItem(
+                from_item.scenePos().x() + from_item.rect().width(),
+                from_item.scenePos().y() + from_item.rect().height() / 2,
+                to_item.scenePos().x(),
+                to_item.scenePos().y() + to_item.rect().height() / 2)
+
+        line.setPen(QtGui.QPen(Qt.black, 5))
+
+        self.scene().addItem(line)
 
 
 class FlowChartScene(QGraphicsScene):

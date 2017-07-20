@@ -50,7 +50,7 @@ class ReLibraryTree(QTreeView):
                 ('blockMesh', [])
             ]),
             ("Solver", [
-                ('icoFoam', [])
+                ('simpleFoam', [])
             ]),
             ("Post-processing", [
                 ('paraFoam', [])
