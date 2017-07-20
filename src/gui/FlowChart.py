@@ -6,7 +6,7 @@ from src.core.Graph import *
 """
 library = {
     'blockMesh': BlockMesh(),
-    'icoFoam': Solver(),
+    'solver': Solver(),
     'paraFoam': ParaFoam()
 }"""
 
@@ -33,7 +33,7 @@ def library(name, project):
     if name == 'blockMesh':
         return BlockMesh(ofDictPath=project.path + '/case/system/blockMeshDict')
 
-    if name == 'simpleFoam':
+    if name == 'solver':
         return Solver(tutorialPath=project.path + '/case')
 
     if name == 'paraFoam':
@@ -70,6 +70,7 @@ class FlowChartView(QGraphicsView):
                 self.add_vertex(text, event.x(), event.y(), 110, 65)
                 self.graph().add_vertex(library(str(text), self.parent().main_pane.project))
                 self.parent().library_tree().clearSelection()
+                print self.graph()
                 return
 
         __items = self.scene().items(QPointF(event.x(), event.y()))
