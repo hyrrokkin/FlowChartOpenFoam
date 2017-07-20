@@ -3,7 +3,7 @@ import os
 
 from src.core.Project import new_project
 
-dir_path = os.getenv("FOAM_TUTORIALS")
+dir_path = os.getenv("FOAM_TUTORIALS") + '/'
 
 
 def subdir(dir_name):
