@@ -121,17 +121,28 @@ class NewProjectDialog(QDialog):
         if self.tutorial_project.isChecked() and self.__tutorials.selectedIndexes():
             index = self.__tutorials.selectedIndexes()[0]
             selected_item = index.model().itemFromIndex(index)
-            path = dir_path + \
-                   selected_item.parent().parent().text() + '/' + \
-                   selected_item.parent().text() + '/' + \
-                   selected_item.text() + '/'
+            path = selected_item.text() + '/'
+            parent = selected_item.parent()
+
+            while not (parent == self.__tutorials.model() or parent is None):
+                path = parent.text() + '/' + path
+                parent = parent.parent()
+
+            path = dir_path + path
 
             os.mkdir(self.path_line_edit.text())
             os.mkdir(self.path_line_edit.text() + '/case')
             os.mkdir(self.path_line_edit.text() + '/template')
             os.system('cp -R ' + str(path) + '* ' + str(self.path_line_edit.text() + '/case'))
 
-            print path
+            print path + 'copy to ' + self.path_line_edit.text() + '/case'
+
+            """path = dir_path + \
+                   selected_item.parent().parent().text() + '/' + \
+                   selected_item.parent().text() + '/' + \
+                   selected_item.text() + '/'"""
+
+            #print selected_item
 
         tmp = str(self.path_line_edit.text()).split('/')
         project = new_project(name=tmp[len(tmp) - 1], path=str(self.path_line_edit.text()))
@@ -150,9 +161,11 @@ class NewProjectDialog(QDialog):
         tree.model().setHorizontalHeaderLabels([tree.tr("Tutorials")])
         tree.setVisible(False)
 
-        first = subdir(dir_path)
+        # first = subdir(dir_path)
+        self.sub_item(tree.model(), subdir(dir_path))
+        # print subdir('/home/user')
 
-        for first_key in first:
+        """for first_key in first:
             first_item = QStandardItem(first_key)
             first_item.setSelectable(False)
             tree.model().appendRow(first_item)
@@ -169,5 +182,19 @@ class NewProjectDialog(QDialog):
                 for third_key in third:
                     third_item = QStandardItem(third_key)
                     third_item.setSelectable(True)
-                    second_item.appendRow(third_item)
+                    second_item.appendRow(third_item)"""
         return tree
+
+    def sub_item(self, parent, dirs, step=0):
+        for _dir in dirs:
+            item = QStandardItem(_dir)
+            item.setEditable(False)
+            if os.path.isdir(dirs[_dir] + '/0') or os.path.isdir(dirs[_dir] + '/constant') or os.path.isdir(
+                            dirs[_dir] + '/system'):
+                item.setSelectable(True)
+                parent.appendRow(item)
+            else:
+                if not step == 5:
+                    item.setSelectable(False)
+                    parent.appendRow(item)
+                    self.sub_item(item, subdir(dirs[_dir]), step + 1)
