@@ -17,6 +17,31 @@ def check_file(item):
         raise ValueError('Can not find file %s' %item) 
 
 
+class ParameterVariation(Vertex):
+    def __init__(self, variableName = '', values = []):
+        super(ParameterVariation, self).__init__(name='ParameterVariation')
+        if variableName == '' or values.size()==0
+            raise ValueError('ParameterVariation must have at least one Variable and one Value')
+
+    #pyFoamFromTemplate.py  system/blockMeshDict "{'nElem': 200}"
+
+    def initialize(self, **kwargs):
+        pass
+             
+    def action(self, **kwargs):
+        print self
+        print 'run blockMesh'
+        try:
+            check_dir(kwargs['path'])
+        except:
+            raise ValueError('Vertex blockMesh can not find path to case')
+            
+        os.system('blockMesh -case ' + kwargs['path'])
+        #os.system('blockMesh')
+
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
+
 class BlockMesh(Vertex):
     def __init__(self, ofDictPath =''):
         super(BlockMesh, self).__init__(name='blockMesh')
@@ -26,7 +51,7 @@ class BlockMesh(Vertex):
             raise ValueError('File blockMeshDict should be provided by user')
 
     def initialize(self, **kwargs):
-        print self
+        pass
              
     def action(self, **kwargs):
         print self
@@ -79,7 +104,7 @@ class Solver(Vertex):
 
     def initialize(self, **kwargs):
         self.copyTutorialIfEmpty(kwargs['path'])
-        print self
+        pass
          
     def action(self, **kwargs):
         print self
@@ -95,7 +120,7 @@ class ParaFoam(Vertex):
         super(ParaFoam, self).__init__(name='paraFoam')
 
     def initialize(self, **kwargs):
-        print self
+        pass
      
     def action(self, **kwargs):
         os.system('paraFoam -case ' + kwargs['path'])

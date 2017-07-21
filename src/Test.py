@@ -20,5 +20,5 @@ graph.add_vertex(paraFoam)
 graph.connect(blockMesh, solver, w1)
 graph.connect(solver, paraFoam, w2)
 
-project = Project(name='cavityProj', graph=graph)
+project = Project(name='cavityProj', graph=graph, clearPath=True)
 project.run()
