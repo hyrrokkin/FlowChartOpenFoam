@@ -202,11 +202,11 @@ class Graph:
     def __call__(self, *args, **kwargs):
         return self
 
-    def run(self, path):
+    def run(self, path, runFirst):
         if len(self.__vertices) > 0:
             for v in self.__vertices:
                 v.initialize(path=path)
-            self.__vertices[0].action(path=path)
+            self.__vertices[runFirst].action(path=path)
 
     def get_vertex(self, identify):
         check_number(identify)

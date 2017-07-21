@@ -11,7 +11,7 @@ def check_path(item):
 
 
 class Project:
-    def __init__(self, name='Untitled', path=os.path.expanduser('~/OFProject/'), graph=None, clearPath=True):
+    def __init__(self, name='Untitled', path=os.path.expanduser('~/OFProject/'), graph=None, runFirst=0, clearPath=True):
         if "WM_PROJECT_VERSION" not in os.environ:
             print ('$WM_PROJECT_VERSION unset. FlowCart doesn not work that way') 
             sys.exit('Forcing quit.')    
@@ -41,8 +41,12 @@ class Project:
     def graph(self):
         return self.__graph
 
-    def run(self):
-        self.__graph.run(self.__path + self.__name)
+    def run(self, runFirst=0):
+        try:
+            self.__runFirst = int(runFirst)
+        except ValueError:
+            print "RunFirst parameter must be integer" 
+        self.__graph.run(self.__path + self.__name, self.__runFirst)
 
     def clean(self):
         os.system('rm -rf ' + self.__path + self.__name + '/*')

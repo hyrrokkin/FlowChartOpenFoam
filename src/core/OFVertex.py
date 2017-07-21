@@ -31,17 +31,19 @@ class ParameterVariation(Vertex):
         self.__templateFile = templateFile
         self.__vars = variables
         self.__vals = values
-        self.__counter = 0
+        self.__counter = len(values[0])
         baseFile = str(self.__templateFile)
         savePath = (baseFile.split("."))[0]
         baseFile = (baseFile.split("/"))[-1]
         baseFile = (baseFile.split("."))[0]
         print savePath
         print baseFile
+        d = dict.fromkeys(self.__vars, 10)
+        
         t=TemplateFileOldFormat(name=self.__templateFile)
         #vals=eval("{%s: %i}") %(self.__vars[0], self.__vals[0][0])
-        t.getString({self.__vars[0]: self.__vals[0][0]})
-        t.writeToFile(savePath, {self.__vars[0]: self.__vals[0][0]})
+        t.getString(d)
+        t.writeToFile(savePath, d)
 
     #pyFoamFromTemplate.py  system/blockMeshDict "{'nElem': 200}"
 
@@ -49,16 +51,17 @@ class ParameterVariation(Vertex):
         pass
              
     def action(self, **kwargs):
+        self.__counter-=1
+        if (self.__counter<0):
+            exit()
         print self
         print 'run ParameterVariation'
         try:
             check_dir(kwargs['path'])
         except:
-            raise ValueError('Vertex ParameterVariation can not find path to case')
-            
-        os.system('blockMesh -case ' + kwargs['path'])
+            raise ValueError('Vertex ParameterVariation can not find path to case')            
+        #os.system('blockMesh -case ' + kwargs['path'])
         #os.system('blockMesh')
-
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
 
