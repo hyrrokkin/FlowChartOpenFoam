@@ -8,7 +8,11 @@ graph = Graph()
 
 blockMeshFilePath = '/home/rocketman/OFProject/cavity/system/blockMeshDict'
 sourceTutorial = '/home/rocketman/OFProject/cavity/'
+blockMeshTemplatePath = '/home/rocketman/OFProject/cavity/system/blockMeshDict.template'
+varList = ['nElem']
+valList = [[2000]]
 
+paramStudy = ParameterVariation(blockMeshTemplatePath, varList, valList)
 blockMesh = BlockMesh( blockMeshFilePath )
 solver = Solver( sourceTutorial )
 paraFoam = ParaFoam()
@@ -21,4 +25,4 @@ graph.connect(blockMesh, solver, w1)
 graph.connect(solver, paraFoam, w2)
 
 project = Project(name='cavityProj', graph=graph, clearPath=True)
-project.run()
+#project.run()

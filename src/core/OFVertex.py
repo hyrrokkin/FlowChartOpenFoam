@@ -3,6 +3,8 @@ import os
 import sys
 #import PyFoam
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
+from PyFoam.Basics.TemplateFile import TemplateFileOldFormat
+
 
 def check_dir(item):
     if not isinstance(item, str):
@@ -18,10 +20,28 @@ def check_file(item):
 
 
 class ParameterVariation(Vertex):
-    def __init__(self, variableName = '', values = []):
+    def __init__(self, templateFile = '', variables = [], values = []):
         super(ParameterVariation, self).__init__(name='ParameterVariation')
-        if variableName == '' or values.size()==0
+        try:
+            check_file(templateFile)
+        except ValueError:
+            raise ValueError('Template file should be provided by user')
+        if len(variables) == 0 or len(values[0])==0:
             raise ValueError('ParameterVariation must have at least one Variable and one Value')
+        self.__templateFile = templateFile
+        self.__vars = variables
+        self.__vals = values
+        self.__counter = 0
+        baseFile = str(self.__templateFile)
+        savePath = (baseFile.split("."))[0]
+        baseFile = (baseFile.split("/"))[-1]
+        baseFile = (baseFile.split("."))[0]
+        print savePath
+        print baseFile
+        t=TemplateFileOldFormat(name=self.__templateFile)
+        #vals=eval("{%s: %i}") %(self.__vars[0], self.__vals[0][0])
+        t.getString({self.__vars[0]: self.__vals[0][0]})
+        t.writeToFile(savePath, {self.__vars[0]: self.__vals[0][0]})
 
     #pyFoamFromTemplate.py  system/blockMeshDict "{'nElem': 200}"
 
@@ -30,11 +50,11 @@ class ParameterVariation(Vertex):
              
     def action(self, **kwargs):
         print self
-        print 'run blockMesh'
+        print 'run ParameterVariation'
         try:
             check_dir(kwargs['path'])
         except:
-            raise ValueError('Vertex blockMesh can not find path to case')
+            raise ValueError('Vertex ParameterVariation can not find path to case')
             
         os.system('blockMesh -case ' + kwargs['path'])
         #os.system('blockMesh')
