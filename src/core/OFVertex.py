@@ -18,52 +18,93 @@ def check_file(item):
     if not os.path.isfile(item):
         raise ValueError('Can not find file %s' %item) 
 
+def copyCase(sourcePath, destPath):
+    try:
+        check_dir(sourcePath)
+        check_dir(destPath)
+    except ValueError:
+        raise ValueError('copyCase error: new case structure was not created')
+    try:
+        check_file(destPath +'/system/controlDict')
+        print "Target dir seems not empty. Pass"
+        pass
+    except:
+        os.system('cp -rn ' + sourcePath + '/* ' + destPath)
+
 
 class ParameterVariation(Vertex):
-    def __init__(self, templateFile = '', variables = [], values = []):
+    def __init__(self, templateFile = '', templateCase = '', variables = [], values = []):
         super(ParameterVariation, self).__init__(name='ParameterVariation')
         try:
             check_file(templateFile)
+            check_dir(templateCase)
         except ValueError:
-            raise ValueError('Template file should be provided by user')
+            raise ValueError('Templates should be provided by user')
         if len(variables) == 0 or len(values[0])==0:
             raise ValueError('ParameterVariation must have at least one Variable and one Value')
+
         self.__templateFile = templateFile
+        self.__templateCase = templateCase
         self.__vars = variables
         self.__vals = values
-        self.__counter = len(values[0])
-        baseFile = str(self.__templateFile)
-        savePath = (baseFile.split("."))[0]
-        baseFile = (baseFile.split("/"))[-1]
-        baseFile = (baseFile.split("."))[0]
-        print savePath
-        print baseFile
-        d = dict.fromkeys(self.__vars, 10)
-        
-        t=TemplateFileOldFormat(name=self.__templateFile)
-        #vals=eval("{%s: %i}") %(self.__vars[0], self.__vals[0][0])
-        t.getString(d)
-        t.writeToFile(savePath, d)
+        self.__counter = -1
+        self.__parPaths = []
+        self.__parDict = dict.fromkeys(self.__vars, 1)
 
     #pyFoamFromTemplate.py  system/blockMeshDict "{'nElem': 200}"
 
     def initialize(self, **kwargs):
+        try:
+            path = kwargs['path']
+            check_dir(path)
+        except:
+            raise ValueError('Vertex ParameterVariation can not find path to case')            
+        self.__cachePath=path+"/cache"
+        try:
+            check_dir(self.__cachePath)
+        except ValueError:
+            os.mkdir(self.__cachePath) 
         pass
-             
+
+    def prepareParameterPath(self):
+        self.__currentPath=self.__cachePath+"/var" + str(self.__counter) 
+        if(self.__counter>len(self.__parPaths)):
+            self.__parPaths.append(self.__currentPath)
+        try:
+            check_dir(self.__currentPath)
+        except ValueError:
+            os.mkdir(self.__currentPath)
+   
+    def setValsOnIter(self, i):
+        if(i>len(self.__vals[0])):
+            print "ParameterVertex is out of values. Exit"
+            exit()
+        baseFile = str(self.__templateFile)
+        savePath = (baseFile.split("."))[0]
+        baseFile = (baseFile.split("/"))[-1]
+        baseFile = (baseFile.split("."))[0]
+        #print savePath
+        #print baseFile
+        t=TemplateFileOldFormat(name=self.__templateFile)
+        for key, value in self.__parDict.items():
+            j = self.__vars.index(key)
+            self.__parDict[key] = self.__vals[j][i]
+        #vals=eval("{%s: %i}") %(self.__vars[0], self.__vals[0][0])
+        t.getString(self.__parDict)
+        t.writeToFile(savePath, self.__parDict)
+
+            
     def action(self, **kwargs):
-        self.__counter-=1
-        if (self.__counter<0):
+        self.__counter+=1
+        if (self.__counter>=len(self.__vals[0])):
             exit()
         print self
         print 'run ParameterVariation'
-        try:
-            check_dir(kwargs['path'])
-        except:
-            raise ValueError('Vertex ParameterVariation can not find path to case')            
-        #os.system('blockMesh -case ' + kwargs['path'])
-        #os.system('blockMesh')
+        self.setValsOnIter(self.__counter)
+        self.prepareParameterPath()
+        copyCase(self.__templateCase, self.__currentPath)
         if len(self.edges()) > 0:
-            self.edges().keys()[0].action(path=kwargs['path'])
+            self.edges().keys()[0].action(path=self.__currentPath)
 
 class BlockMesh(Vertex):
     def __init__(self, ofDictPath =''):
@@ -84,7 +125,7 @@ class BlockMesh(Vertex):
         except:
             raise ValueError('Vertex blockMesh can not find path to case')
             
-        os.system('blockMesh -case ' + kwargs['path'])
+        os.system('blockMesh -case ' + kwargs['path'] + ">log.blockMesh")
         #os.system('blockMesh')
 
         if len(self.edges()) > 0:
@@ -99,8 +140,7 @@ class Solver(Vertex):
             raise ValueError('Path to tutorial template case for Solver should be provided by user')
         self.__setupCase = tutorialPath
         parsedControlDict=ParsedParameterFile(tutorialPath+'/system/controlDict')    
-        self.__solverNameFromTutorial = parsedControlDict["application"]
-        
+        self.__solverName = parsedControlDict["application"]
         #Very good way to control previously parsed OpenFOAM file
         #parsedControlDict["endTime"] = 1
         #parsedControlDict.writeFile()
@@ -112,27 +152,23 @@ class Solver(Vertex):
         return self.__setupCase
         
     def initCase(self, casePath):
-        self.copyTutorialIfEmpty(casePath)
+        copyCase(self.__setupCase, casePath)
         return True
     
-    def copyTutorialIfEmpty(self, casePath):
-        try:
-            check_dir(casePath)        
-        except ValueError:
-            raise ValueError('Vertex Solver error: case structure was not created')
-        try:
-            check_file(casePath +'/system/controlDict')
-        except:
-            os.system('cp -rn ' + self.setupCase + '/* ' + casePath)
-
     def initialize(self, **kwargs):
-        self.copyTutorialIfEmpty(kwargs['path'])
+        #by defult it's project dir
+        self.__runPath = kwargs['path'] + "/" + self.__solverName
+        try:
+            check_dir(self.__runPath)
+        except ValueError:
+            os.mkdir(self.__runPath) 
+        copyCase(self.__setupCase, self.__runPath)
         pass
          
     def action(self, **kwargs):
         print self
-        print 'run ' + self.__solverNameFromTutorial
-        os.system(self.__solverNameFromTutorial + ' -case ' + kwargs['path'])
+        print 'run ' + self.__solverName
+        os.system(self.__solverName + ' -case ' + kwargs['path'] + '>log.'+self.__solverName)
 
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])

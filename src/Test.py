@@ -11,9 +11,9 @@ blockMeshFilePath = '/home/rocketman/OFProject/cavity/system/blockMeshDict'
 sourceTutorial = '/home/rocketman/OFProject/cavity/'
 blockMeshTemplatePath = '/home/rocketman/OFProject/cavity/system/blockMeshDict.template'
 varList = ['xElem', 'yElem']
-valList = [[200], [100]]
+valList = [[20, 50], [20, 50]]
 
-paramStudy = ParameterVariation(blockMeshTemplatePath, varList, valList)
+paramStudy = ParameterVariation(blockMeshTemplatePath, sourceTutorial, varList, valList)
 blockMesh = BlockMesh( blockMeshFilePath)
 solver = Solver( sourceTutorial )
 paraFoam = ParaFoam()
