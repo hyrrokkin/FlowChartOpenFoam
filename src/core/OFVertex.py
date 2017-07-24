@@ -51,8 +51,6 @@ class ParameterVariation(Vertex):
         self.__parPaths = []
         self.__parDict = dict.fromkeys(self.__vars, 1)
 
-    #pyFoamFromTemplate.py  system/blockMeshDict "{'nElem': 200}"
-
     def initialize(self, **kwargs):
         try:
             path = kwargs['path']
@@ -89,10 +87,7 @@ class ParameterVariation(Vertex):
         for key, value in self.__parDict.items():
             j = self.__vars.index(key)
             self.__parDict[key] = self.__vals[j][i]
-        #vals=eval("{%s: %i}") %(self.__vars[0], self.__vals[0][0])
-        t.getString(self.__parDict)
         t.writeToFile(savePath, self.__parDict)
-
             
     def action(self, **kwargs):
         self.__counter+=1
@@ -131,6 +126,69 @@ class BlockMesh(Vertex):
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
 
+class Probe(Vertex):
+    def __init__(self, ofDictPath ='', interval = 1, field = 'p', point = [0.,0.,0.]):
+        super(Probe, self).__init__(name='probe')
+        try:
+            if (str(ofDictPath).split("/")[-1]!="controlDict"):
+                raise ValueError
+            check_file(ofDictPath)
+        except ValueError:
+            raise ValueError('File controlDict should be provided by user')
+        try:
+            if(int(interval) <= 0):
+                raise ValueError
+            #todo field check
+            #if(str(field)!=("p"))
+            if(len(point)!=3):
+                raise ValueError
+        except ValueError:
+            raise ValueError('Not valid parameters for Probe')
+        #all checks passed
+        self.controlDict = ParsedParameterFile(ofDictPath)    
+        self.interval = interval
+        self.field = field
+        self.point = point
+
+    def checkForProbe(self):
+        try:
+            funcField=self.controlDict['functions']
+        except KeyError:
+            self.controlDict['functions'] = {}
+            return False
+        for Name,Val in funcField.iteritems():
+            for fName,fVal in Val.iteritems():
+                if type(fName)!=str or type(fVal)!=str:
+                    # this is not an old-school entry
+                    continue
+                    if(fName == 'type' & fVal == 'probes'):
+                        return True
+                    #print fName
+                    #print fVal
+        return False
+
+    def addProbe():
+        pass
+
+    def initialize(self, **kwargs):
+        if self.checkForProbe():
+            print "Probe Vertex: controlDict contains probes. It will be updated"
+        else:
+            print "Probe Vertex: no probes detected in controlDict"
+        pass
+             
+    def action(self, **kwargs):
+        print self
+        print 'Probe control'
+        try:
+            check_dir(kwargs['path'])
+        except:
+            raise ValueError('Vertex Probe can not find path to case')
+        #os.system('blockMesh -case ' + kwargs['path'] + ">log.blockMesh")
+        #os.system('blockMesh')
+
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
 
 class Solver(Vertex):
     def __init__(self, tutorialPath=''):
