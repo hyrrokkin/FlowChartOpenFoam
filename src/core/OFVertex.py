@@ -121,18 +121,17 @@ class BlockMesh(Vertex):
             raise ValueError('Vertex blockMesh can not find path to case')
             
         os.system('blockMesh -case ' + kwargs['path'] + ">log.blockMesh")
-        #os.system('blockMesh')
 
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
 
 class Probe(Vertex):
-    def __init__(self, ofDictPath ='', interval = 1, field = 'p', point = [0.,0.,0.]):
+    def __init__(self, templateDict ='', interval = 1, field = 'p', point = [0.,0.,0.]):
         super(Probe, self).__init__(name='probe')
         try:
-            if (str(ofDictPath).split("/")[-1]!="controlDict"):
+            if (str(templateDict).split("/")[-1]!="controlDict"):
                 raise ValueError
-            check_file(ofDictPath)
+            check_file(templateDict)
         except ValueError:
             raise ValueError('File controlDict should be provided by user')
         try:
@@ -145,10 +144,12 @@ class Probe(Vertex):
         except ValueError:
             raise ValueError('Not valid parameters for Probe')
         #all checks passed
-        self.controlDict = ParsedParameterFile(ofDictPath)    
+        self.controlDict = ParsedParameterFile(templateDict)    
         self.interval = interval
         self.field = field
-        self.point = point
+        self.probeCoords = []
+        strPoint = str('('+ ' '.join(map(str, point)) + ')')
+        self.probeCoords.append(strPoint)
 
     def checkForProbe(self):
         try:
@@ -167,26 +168,29 @@ class Probe(Vertex):
                     #print fVal
         return False
 
-    def addProbe():
-        pass
-
+    def addProbe(self):
+        #Now actually overwrites probes
+        try:
+            self.controlDict['functions'] = {'ProbeVertex': {'type': 'probes', 'fields':[self.field], 'libs': ['"libsampling.so"'], 'writeControl': 'timeStep', 'writeInterval': self.interval, 'probeLocations': self.probeCoords}}
+        except:
+            print "Can not add ProbeVertex function to controlDict"
+        self.controlDict.writeFile()
+        
     def initialize(self, **kwargs):
         if self.checkForProbe():
             print "Probe Vertex: controlDict contains probes. It will be updated"
         else:
             print "Probe Vertex: no probes detected in controlDict"
+        self.addProbe()
         pass
              
     def action(self, **kwargs):
         print self
-        print 'Probe control'
+        print 'Probe control. Just pass'
         try:
             check_dir(kwargs['path'])
         except:
             raise ValueError('Vertex Probe can not find path to case')
-        #os.system('blockMesh -case ' + kwargs['path'] + ">log.blockMesh")
-        #os.system('blockMesh')
-
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
 
@@ -199,7 +203,7 @@ class Solver(Vertex):
         self.__setupCase = tutorialPath
         parsedControlDict=ParsedParameterFile(tutorialPath+'/system/controlDict')    
         self.__solverName = parsedControlDict["application"]
-        #Very good way to control previously parsed OpenFOAM file
+        #Here could be solution control algo
         #parsedControlDict["endTime"] = 1
         #parsedControlDict.writeFile()
         
