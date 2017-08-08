@@ -31,6 +31,14 @@ def copyCase(sourcePath, destPath):
     except:
         os.system('cp -rn ' + sourcePath + '/* ' + destPath)
 
+class EmptyVertex(Vertex):
+    def __init__(self):
+        super(EmptyVertex, self).__init__(name='empty')
+    def initialize(self, **kwargs):
+        pass             
+    def action(self, **kwargs):
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
 
 class ParameterVariation(Vertex):
     def __init__(self, templateFile = '', templateCase = '', variables = [], values = []):
@@ -86,7 +94,7 @@ class ParameterVariation(Vertex):
         t=TemplateFileOldFormat(name=self.__templateFile)
         for key, value in self.__parDict.items():
             j = self.__vars.index(key)
-            self.__parDict[key] = self.__vals[j][i]
+            self.__parDict[key] = self.__vals[i][j]
         t.writeToFile(savePath, self.__parDict)
             
     def action(self, **kwargs):
@@ -230,7 +238,7 @@ class Solver(Vertex):
     def action(self, **kwargs):
         print self
         print 'run ' + self.__solverName
-        os.system(self.__solverName + ' -case ' + kwargs['path'] + '>log.'+self.__solverName)
+        os.system(self.__solverName + ' -case ' + kwargs['path'] +      '>' + kwargs['path'] + '/' + 'log.'+self.__solverName)
 
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
