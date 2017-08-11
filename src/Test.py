@@ -13,13 +13,13 @@ blockMeshTemplatePath = '/home/rocketman/OFProject/cavity/system/blockMeshDict.t
 UtemplatePath = '/home/rocketman/OFProject/cavity/0/U.template'
 
 Uvars = ['Ux', 'Uy', 'Uz']
-Uvals = [[1, 5 , 10], [0, 0, 0], [0, 0, 0]]
+Uvals = [[1, 0 , 0], [5, 0, 0], [10, 0, 0]]
 varList = ['xElem', 'yElem']
 valList = [[20, 50], [20, 50]]
 
 controlDictPath = '/home/rocketman/OFProject/cavity/system/controlDict'
 
-paramStudy = ParameterVariation(UtemplatePath, sourceTutorial, Uvars, Uvals) 
+paramStudy = ParameterVariation(templateFile=UtemplatePath, templateCase=sourceTutorial, variables=Uvars, values=Uvals) 
 blockMesh = BlockMesh( blockMeshFilePath)
 probe = Probe( controlDictPath, 10, 'p', [0.025, 0.025, 0.005] )
 solver = Solver( sourceTutorial )

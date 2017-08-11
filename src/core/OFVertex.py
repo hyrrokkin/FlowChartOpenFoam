@@ -1,6 +1,7 @@
 from Graph import Vertex
 import os
 import sys
+import csv
 #import PyFoam
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.Basics.TemplateFile import TemplateFileOldFormat
@@ -41,23 +42,51 @@ class EmptyVertex(Vertex):
             self.edges().keys()[0].action(path=kwargs['path'])
 
 class ParameterVariation(Vertex):
-    def __init__(self, templateFile = '', templateCase = '', variables = [], values = []):
+    def __init__(self, **kwargs):
         super(ParameterVariation, self).__init__(name='ParameterVariation')
+        tFile = kwargs.pop('templateFile', '')
+        tCase = kwargs.pop('templateCase', '')
         try:
-            check_file(templateFile)
-            check_dir(templateCase)
+            check_file(tFile)
+            check_dir(tCase)
         except ValueError:
-            raise ValueError('Templates should be provided by user')
-        if len(variables) == 0 or len(values[0])==0:
-            raise ValueError('ParameterVariation must have at least one Variable and one Value')
+            raise ValueError('ParameterVariation: provide templates')
+        self.__templateFile = tFile        
+        self.__templateCase = tCase
+        parFile = kwargs.pop('parFile', '')
+        argvar = kwargs.pop('variables', [])
+        argval = kwargs.pop('values', [])
+        if len(parFile) == 0:
+            if len(argvar) == 0 or len(argval)==0:
+                raise ValueError('ParameterVariation: no input data')
+                exit(0)
+        else:
+            try:
+                check_file(parFile)
+            except ValueError:
+                raise ValueError('ParameterVariation: no input file')
 
-        self.__templateFile = templateFile
-        self.__templateCase = templateCase
-        self.__vars = variables
-        self.__vals = values
+            csvFile = open(parFile, 'rb')
+            reader = csv.reader(csvFile)
+            try:
+                for row in reader:
+                    if reader.line_num == 1:
+                        for field in row:
+                            argvar.append(str(field))
+                        continue
+                    fList = []
+                    for field in row:
+                        fList.append(float(field))
+                    argval.append(fList)
+            except csv.Error as e:
+                sys.exit('file %s, line %d: %s' % (parFile, reader.line_num, e))
+            csvFile.close()   # <---IMPORTANT
+        self.__vars = argvar
+        self.__vals = argval
         self.__counter = -1
+        self.__size = len(argval)
         self.__parPaths = []
-        self.__parDict = dict.fromkeys(self.__vars, 1)
+        self.__parDict = dict.fromkeys(self.__vars, 0.0)
 
     def initialize(self, **kwargs):
         try:
@@ -82,27 +111,29 @@ class ParameterVariation(Vertex):
             os.mkdir(self.__currentPath)
    
     def setValsOnIter(self, i):
-        if(i>len(self.__vals[0])):
+        if(i>len(self.__vals)):
             print "ParameterVertex is out of values. Exit"
             exit()
         baseFile = str(self.__templateFile)
         savePath = (baseFile.split("."))[0]
         baseFile = (baseFile.split("/"))[-1]
         baseFile = (baseFile.split("."))[0]
-        #print savePath
-        #print baseFile
         t=TemplateFileOldFormat(name=self.__templateFile)
+        
         for key, value in self.__parDict.items():
             j = self.__vars.index(key)
             self.__parDict[key] = self.__vals[i][j]
+            sys.stdout.write(key+"="+str(self.__vals[i][j])+"; ")
+        sys.stdout.write("\n")
+        sys.stdout.flush()
         t.writeToFile(savePath, self.__parDict)
             
     def action(self, **kwargs):
         self.__counter+=1
-        if (self.__counter>=len(self.__vals[0])):
+        if (self.__counter>=self.__size):
             exit()
         print self
-        print 'run ParameterVariation'
+        print "running value %d of %d" % (self.__counter, self.__size)
         self.setValsOnIter(self.__counter)
         self.prepareParameterPath()
         copyCase(self.__templateCase, self.__currentPath)
