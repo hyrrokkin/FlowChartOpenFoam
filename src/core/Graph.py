@@ -227,8 +227,8 @@ class Graph:
 
     def add_vertex(self, vertex):
         check_vertex(vertex)
-        if vertex in self:
-            return False
+        #if vertex in self:
+        #    return False
         vertex.id = len(self.__vertices)
         vertex.clear_connections()
         self.__vertices.append(vertex)

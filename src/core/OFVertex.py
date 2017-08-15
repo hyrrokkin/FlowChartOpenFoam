@@ -6,6 +6,7 @@ import csv
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.Basics.TemplateFile import TemplateFileOldFormat
 
+import foamForces
 
 def check_dir(item):
     if not isinstance(item, str):
@@ -89,6 +90,7 @@ class ParameterVariation(Vertex):
         self.__parDict = dict.fromkeys(self.__vars, 0.0)
 
     def initialize(self, **kwargs):
+        print "Parameter Vertex Initialization"
         try:
             path = kwargs['path']
             check_dir(path)
@@ -101,29 +103,34 @@ class ParameterVariation(Vertex):
             os.mkdir(self.__cachePath) 
         pass
 
-    def prepareParameterPath(self):
+    def prepareParameterCase(self):
         self.__currentPath=self.__cachePath+"/var" + str(self.__counter) 
         if(self.__counter>len(self.__parPaths)):
             self.__parPaths.append(self.__currentPath)
         try:
             check_dir(self.__currentPath)
+            check_dir(self.__currentPath+"/system")
         except ValueError:
             os.mkdir(self.__currentPath)
+            copyCase(self.__templateCase, self.__currentPath)
    
     def setValsOnIter(self, i):
         if(i>len(self.__vals)):
             print "ParameterVertex is out of values. Exit"
             exit()
         baseFile = str(self.__templateFile)
-        savePath = (baseFile.split("."))[0]
+        relativeDir = (baseFile.split("/"))[-2]
         baseFile = (baseFile.split("/"))[-1]
+        saveFile = (baseFile.split("."))[0]
+        savePath = self.__currentPath+"/"+relativeDir+"/"+saveFile
+        self.__templateFile = self.__currentPath+"/"+relativeDir+"/"+baseFile
         baseFile = (baseFile.split("."))[0]
         t=TemplateFileOldFormat(name=self.__templateFile)
         
         for key, value in self.__parDict.items():
             j = self.__vars.index(key)
             self.__parDict[key] = self.__vals[i][j]
-            sys.stdout.write(key+"="+str(self.__vals[i][j])+"; ")
+            sys.stdout.write(key+"="+str(self.__vals[i][j])+" ")
         sys.stdout.write("\n")
         sys.stdout.flush()
         t.writeToFile(savePath, self.__parDict)
@@ -134,11 +141,52 @@ class ParameterVariation(Vertex):
             exit()
         print self
         print "running value %d of %d" % (self.__counter, self.__size)
+        self.prepareParameterCase()
         self.setValsOnIter(self.__counter)
-        self.prepareParameterPath()
-        copyCase(self.__templateCase, self.__currentPath)
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=self.__currentPath)
+
+class TopoSet(Vertex):
+    def __init__(self):
+        super(TopoSet, self).__init__(name='topoSet')
+
+    def initialize(self, **kwargs):
+        pass
+             
+    def action(self, **kwargs):
+        print self
+        print 'run topoSet'
+        try:
+            check_dir(kwargs['path'])
+            check_file(kwargs['path']+"/"+"system/topoSetDict")
+        except:
+            raise ValueError('Vertex topoSet can not find dict file')
+            
+        os.system('topoSet -case ' + kwargs['path'] + ">log.topoSet")
+
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
+
+class CreatePatch(Vertex):
+    def __init__(self):
+        super(CreatePatch, self).__init__(name='createPatch')
+
+    def initialize(self, **kwargs):
+        pass
+             
+    def action(self, **kwargs):
+        print self
+        print 'run createPatch'
+        try:
+            check_dir(kwargs['path'])
+            check_file(kwargs['path']+"/"+"system/createPatchDict")
+        except:
+            raise ValueError('Vertex createPatch can not find dict file')
+            
+        os.system('createPatch -overwrite -case ' + kwargs['path'] + ">log.createPatch")
+
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
 
 class BlockMesh(Vertex):
     def __init__(self, ofDictPath =''):
@@ -235,17 +283,21 @@ class Probe(Vertex):
 
 class Solver(Vertex):
     def __init__(self, tutorialPath=''):
+        self.__setupCase = tutorialPath
+        self.__plotResiduals = False
+        if len(self.__setupCase) == 0:
+            super(Solver, self).__init__(name='solver')
+            return
         try:
-            check_file(tutorialPath +'/system/controlDict')
+            check_file(self.__setupCase +'/system/controlDict')
+            check_file(self.__setupCase +'/system/decomposePar')
         except ValueError:
             raise ValueError('Path to tutorial template case for Solver should be provided by user')
-        self.__setupCase = tutorialPath
-        parsedControlDict=ParsedParameterFile(tutorialPath+'/system/controlDict')    
+        parsedControlDict=ParsedParameterFile(self.__setupCase+'/system/controlDict')    
         self.__solverName = parsedControlDict["application"]
         #Here could be solution control algo
         #parsedControlDict["endTime"] = 1
         #parsedControlDict.writeFile()
-        
         super(Solver, self).__init__(name='solver')
 
     @property
@@ -257,6 +309,8 @@ class Solver(Vertex):
         return True
     
     def initialize(self, **kwargs):
+        if len(self.__setupCase) == 0:
+            return 
         #by defult it's project dir
         self.__runPath = kwargs['path'] + "/" + self.__solverName
         try:
@@ -274,6 +328,72 @@ class Solver(Vertex):
         if len(self.edges()) > 0:
             self.edges().keys()[0].action(path=kwargs['path'])
 
+class SolverParallel(Solver):
+    def __init__(self, nProc = 0, tutorialPath=''):
+        try:
+            self.__nProc = int(nProc)
+            if self.__nProc == 0 :
+                raise ValueError('SolverParallel must be provided with nProc')
+        except ValueError:
+            print "SolverParallel must be initialized with integer"            
+        super(SolverParallel, self).__init__(tutorialPath)
+        self.__plotResiduals = False
+         
+    def action(self, **kwargs):
+        try:
+            check_dir(kwargs['path'])
+        except ValueError:
+            raise ValueError('SolverParallel solution flow error: case not valid')
+            
+        self.__setupCase = kwargs['path']
+        parsedControlDict=ParsedParameterFile(self.__setupCase+'/system/controlDict')  
+        nProc = str(self.__nProc)
+        self.__solverName = parsedControlDict["application"]
+        print 'run decomposition'
+        launchString = []
+        launchString.append('pyFoamDecompose.py')
+        launchString.append(kwargs['path'])
+        launchString.append(nProc)
+        launchString.append('--silent')
+        os.system(' '.join(launchString))   
+        # simpleFoam
+        launchString = []
+        if self.__plotResiduals:
+            launchString.append('pyFoamPlotRunner.py')
+            launchString.append('--hardcopy --format-of-hardcopy svg')
+        else:
+            launchString.append('pyFoamRunner.py')
+        launchString.append('--proc '+nProc)
+        launchString.append('--clear --silent')
+        launchString.append(self.__solverName)
+        launchString.append('-case')
+        launchString.append(kwargs['path'])   
+        print 'run distributed ' + self.__solverName
+        os.system(' '.join(launchString))
+
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path=kwargs['path'])
+
+class ForcesCollector(Vertex):
+    def __init__(self):
+        super(ForcesCollector, self).__init__(name='forcesCollector')
+
+    def initialize(self, **kwargs):
+        self.__resFilePath = kwargs['path']+"/ForcesResults.csv"
+        pass
+     
+    def action(self, **kwargs):
+        forcesDat = str(kwargs['path'] + '/postProcessing/forces/0/forces.dat')
+        results = foamForces.GetAveragedForces(forcesDat)
+        resFile = open(self.__resFilePath, 'a')
+        writer = csv.writer(resFile)
+        writer.writerow(results)
+        resFile.close()
+        print self
+        print "Calculated Design Point Results"
+        print results
+        if len(self.edges()) > 0:
+            self.edges().keys()[0].action(path = kwargs['path'])
 
 class ParaFoam(Vertex):
     def __init__(self):
